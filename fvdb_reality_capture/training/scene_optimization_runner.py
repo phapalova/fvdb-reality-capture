@@ -1168,7 +1168,7 @@ class SceneOptimizationRunner:
 
         # Tensorboard
         self._tensorboard_logger = None
-        if tensorboard_path is not None and optimizer is not None:
+        if tensorboard_path is not None and optimizer is not None and log_tensorboard_every > 0:
             self._tensorboard_logger = TensorboardLogger(
                 log_dir=tensorboard_path,
                 log_every_step=log_tensorboard_every,
