@@ -39,7 +39,7 @@ def mesh_from_splats(
     The TSDF fusion algorithm is a method for integrating multiple depth maps into a single volumetric representation of a scene encoding a
     truncated signed distance field (_i.e._ a signed distance field in a narrow band around the surface). TSDF fusion was first described in the paper
     "KinectFusion: Real-Time Dense Surface Mapping and Tracking"
-    (https://www.microsoft.com/en-us/research/publication/kinectfusion-real-time-3d-reconstruction-and-interaction-using-a-moving-depth-camera/).
+    (https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/ismar2011.pdf).
     We use a modified version of this algorithm which only allocates voxels in a narrow band around the surface of the model
     to reduce memory usage and speed up computation.
 
