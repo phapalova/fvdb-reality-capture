@@ -125,14 +125,25 @@ jobs:
           micromamba activate fvdb
           pip install sphinx sphinx_rtd_theme myst_parser commonmark
           pip install -e .
-          sphinx-build docs/ -E -a _build
+          sphinx-build docs/ -E -a _docs_build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3 # or specific "vX.X.X" version tag for this action
         with:
-          github_token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          publish_branch: gh-pages
+          path: _docs_build/
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: fvdb-reality-capture-build-docs
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   fvdb-build-stop-runner:
     name: Stop CPU-only EC2 runner for build
