@@ -101,14 +101,6 @@ jobs:
           environment-name: fvdb
           environment-file: fvdb-core/env/dev_environment.yml
 
-      - name: Build fvdb
-        run: |
-          echo "Building fvdb"
-          pushd fvdb-core
-          micromamba activate fvdb
-          ./build.sh wheel verbose --cuda-arch-list '8.9+PTX'
-          popd
-
       - name: Install reality-capture package and docs deps
         run: |
           micromamba activate fvdb
