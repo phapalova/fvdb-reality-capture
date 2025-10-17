@@ -4,16 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "Branch to run on"
+        description: "Branch to build"
         required: true
         default: "main"
 
 jobs:
   make-artifact:
+    name: Make an artifact with the commit hash
     runs-on: ubuntu-latest:
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all branches
 
       - name: Clone fvdb-core
         run: | 
