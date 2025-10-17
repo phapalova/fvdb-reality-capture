@@ -106,7 +106,7 @@ jobs:
           echo "Building fvdb"
           pushd fvdb-core
           micromamba activate fvdb
-          ./build.sh install verbose
+          ./build.sh install verbose --cuda-arch-list '8.9+PTX'
           popd
           
       - name: Install reality-capture package and docs deps
