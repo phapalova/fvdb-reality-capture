@@ -249,8 +249,10 @@ jobs:
           echo "Cloning fvdb"
           pwd
           git clone https://github.com/openvdb/fvdb-core.git
+          pushd fvdb-core
           FVDB_CORE_COMMIT_HASH=$(git rev-parse HEAD)
           echo "fvdb_core_commit_hash=$FVDB_CORE_COMMIT_HASH" >> "$GITHUB_OUTPUT"
+          popd
 
       - name: Set up fvdb Conda env
         uses: mamba-org/setup-micromamba@v2
