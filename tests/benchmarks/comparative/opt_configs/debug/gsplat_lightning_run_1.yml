@@ -1,6 +1,6 @@
 # The default GSplat configuration parameters.
 framework: gsplat
-name: gsplat
+name: gsplat_lightning_run
 color: "#767676"
 
 training:
@@ -14,7 +14,7 @@ training:
     initial_covariance_scale: 1.0
     initial_opacity: 0.1
     lpips_net: alex
-    max_epochs: 200
+    max_epochs: 1
     min_radius_2d: 0.0
     near_plane: 0.01
     opacity_reg: 0.0
@@ -35,11 +35,15 @@ training:
     tile_size: 16
     eval_at_percent:
       - 100
-  save_at_percent:
-    - 100
+    save_at_percent:
+      - 2
+      - 20
+      - 100
+
 training_params:
   crop_bbox: null
   device: cuda
+  disable_viewer: true
   image_downsample_factor: 4
   log_images_to_tensorboard: false
   log_tensorboard_every: 100
@@ -47,4 +51,4 @@ training_params:
   points_percentile_filter: 0.0
   save_eval_images: false
   save_results: true
-  use_every_n_as_val: 10
+  use_every_n_as_val: 100

@@ -7,30 +7,53 @@ import sys
 import time
 from typing import Any
 
+import yaml
+
+import fvdb_reality_capture as frc
+
 from ._common import extract_training_metrics, run_command
 
 
-def run_gsplat_training(scene_name: str, result_dir: pathlib.Path, config: dict[str, Any]) -> dict[str, Any]:
+def run_gsplat_training(
+    scene_name: str, result_path: pathlib.Path, benchmark_config_path: pathlib.Path, opt_config_path: pathlib.Path
+) -> dict[str, Any]:
     """Run GSplat training using the simplified basic benchmark approach."""
     logging.info(f"Starting GSplat training for scene: {scene_name}")
 
+    # Start timing
+    start_time = time.time()
+
+    # Load the benchmark config
+    with open(benchmark_config_path, "r") as f:
+        run_config = yaml.safe_load(f)
+
+    # Filter to only include the current scene
+    run_config["datasets"] = [dataset for dataset in run_config["datasets"] if dataset["name"] == scene_name]
+    scene_path = run_config["datasets"][0]["path"]
+
+    # Load the optimization config
+    with open(opt_config_path, "r") as f:
+        opt_config = yaml.safe_load(f)
+
     # Create results directory
-    gsplat_result_dir = result_dir / f"{scene_name}_gsplat"
+    config_name = opt_config["name"]
+    gsplat_result_dir = result_path / f"{scene_name}_{config_name}"
     gsplat_result_dir.mkdir(parents=True, exist_ok=True)
 
     # Create log file for capturing output
     log_file = gsplat_result_dir / "training.log"
 
-    # Start timing
-    start_time = time.time()
+    # Create a temporary config file with only the specific scene
+    temp_config_path = gsplat_result_dir / "temp_config.yaml"
+
+    run_config["optimization_config"] = opt_config
 
     # Calculate densification parameters to match FVDB
     # Import the extraction logic to compute parameters dynamically
     from extract_config_params import extract_training_params
 
-    # Load the config and extract parameters for this scene
-    config_path = "benchmark_config.yaml"
-    params = extract_training_params(config_path, scene_name)
+    # Extract parameters for this scene
+    params = extract_training_params(run_config, scene_name)
 
     # Extract the computed densification parameters
     max_steps = params["max_steps"]
@@ -43,6 +66,10 @@ def run_gsplat_training(scene_name: str, result_dir: pathlib.Path, config: dict[
     training_images = params["training_images"]
     reset_every_steps = int(reset_opacities_every_epoch * training_images)
 
+    # Save the filtered config
+    with open(temp_config_path, "w") as f:
+        yaml.dump(run_config, f, default_flow_style=False, sort_keys=False)
+
     logging.info(f"GSplat densification parameters for {scene_name}:")
     logging.info(f"  max_steps: {max_steps}")
     logging.info(f"  refine_start_steps: {refine_start_steps}")
@@ -51,6 +78,20 @@ def run_gsplat_training(scene_name: str, result_dir: pathlib.Path, config: dict[
     logging.info(f"  reset_every_steps: {reset_every_steps}")
     logging.info(f"  Training images: {training_images}")
     logging.info(f"  Total images: {params.get('total_images', 'N/A')}")
+
+    data_base_path = run_config.get("paths", {}).get("data_base", "/workspace/data")
+    scene_path = pathlib.Path(data_base_path) / scene_path
+
+    # Create symlinks for both "images_{factor}" and "images_{factor}_png" pointing to "images", if they don't exist
+    ds_factor = params.get("image_downsample_factor", 4)
+    for suffix in ["", "_png"]:
+        rescaled_images_path = scene_path / f"images_{ds_factor}{suffix}"
+        if not rescaled_images_path.exists():
+            rescaled_images_path.symlink_to(scene_path / "images")
+            logging.info(f"Created symlink to {rescaled_images_path} from {scene_path / 'images'}")
+        else:
+            logging.info(f"Rescaled images path already exists: {rescaled_images_path}")
+            logging.info(f"Skipping symlink creation")
 
     # Build GSplat command with computed parameters
     cmd = [
@@ -62,16 +103,16 @@ def run_gsplat_training(scene_name: str, result_dir: pathlib.Path, config: dict[
         "--disable_viewer",
         "--disable_video",  # Disable video generation to avoid rendering errors
         "--data_factor",
-        str(scene_info["data_factor"]),  # TODO: Load this from config
+        str(ds_factor),
         "--render_traj_path",
         "ellipse",
         "--data_dir",
-        f"{config.get('paths', {}).get('data_base', '/workspace/data')}/360_v2/{scene_name}/",
+        str(scene_path),
         "--result_dir",
         str(gsplat_result_dir),
         "--max_steps",
         str(max_steps),  # Full training
-        # Add densification parameters to match FVDB using tyro nested syntax
+        # densification parameters to match FVDB
         "--strategy.refine_start_iter",
         str(refine_start_steps),
         "--strategy.refine_stop_iter",
@@ -81,10 +122,10 @@ def run_gsplat_training(scene_name: str, result_dir: pathlib.Path, config: dict[
         "--strategy.reset_every",
         str(reset_every_steps),
         "--strategy.pause_refine_after_reset",
-        "0",  # Don't pause refinement after reset
+        "0",
         "--strategy.verbose",  # Enable verbose output to see refinement info
         "--global_scale",
-        "0.909",  # Compensate for GSplat's 1.1x scene scale multiplier to match FVDB
+        "1.0",
         "--strategy.refine_scale2d_stop_iter",
         "1",  # Disable 2D scale-based splitting to match FVDB behavior
     ]
@@ -128,7 +169,7 @@ def run_gsplat_training(scene_name: str, result_dir: pathlib.Path, config: dict[
     )
     watcher.start()
 
-    gsplat_base = config.get("paths", {}).get(
+    gsplat_base = run_config.get("paths", {}).get(
         "gsplat_base", "../../../../3d_gaussian_splatting/benchmark/gsplat/examples"
     )
     if not pathlib.Path(gsplat_base).exists():

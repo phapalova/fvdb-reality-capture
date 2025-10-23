@@ -2,7 +2,8 @@
 # at every refinement step.
 # This matches the default behavior of gsplat.
 framework: fvdb
-name: fvdb_fixed_grad2d
+name: fvdb
+color: "#76B900"
 
 optimization_config:
   max_epochs: 200
@@ -10,8 +11,7 @@ optimization_config:
   eval_at_percent:
     - 100
   save_at_percent:
-  - 20
-  - 100
+    - 100
   update_viewer_every_epochs: -1
 
   # Optimization parameters
@@ -35,7 +35,7 @@ optimization_config:
   remove_gaussians_outside_scene_bbox: false
 
   # Pose optimization
-  optimize_camera_poses: true
+  optimize_camera_poses: false
   pose_opt_lr: 1.0e-05
   pose_opt_reg: 1.0e-06
   pose_opt_lr_decay: 1.0
@@ -60,9 +60,8 @@ training_arguments:
   min_points_per_image: 5
 
   device: cuda
-  use_every_n_as_val: 100
+  use_every_n_as_val: 10
 
-  disable_viewer: true
   log_tensorboard_every: -1
   log_images_to_tensorboard: false
   save_results: true
