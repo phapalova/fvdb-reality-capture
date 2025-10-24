@@ -136,7 +136,7 @@ jobs:
   deploy-fvdb-reality-capture-docs:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: fvdb.ai/reality-capture
     runs-on: ubuntu-latest
     needs: fvdb-reality-capture-build-docs
     steps:
